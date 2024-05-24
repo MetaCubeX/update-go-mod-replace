@@ -25,8 +25,17 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		sourceReplacePath := make(map[string]struct{})
 		for _, replace := range sourceMod.Replace {
+			sourceReplacePath[replace.Old.Path] = struct{}{}
 			_ = targetMod.AddReplace(replace.Old.Path, replace.Old.Version, replace.New.Path, replace.New.Version) // don't have any error
+		}
+		for _, replace := range targetMod.Replace {
+			if replace.New.Version != "" { // not filesystem paths
+				if _, ok := sourceReplacePath[replace.Old.Path]; !ok { // not in source mod file
+					_ = targetMod.DropReplace(replace.Old.Path, replace.Old.Version) // don't have any error
+				}
+			}
 		}
 		targetFile, err = targetMod.Format()
 		if err != nil {
